@@ -7,10 +7,14 @@ Created on Sun Feb 11 12:21:46 2018
 """
 
 import jieba
+import jieba.analyse
+import pickle
 from importer import importer
 import re
 from sklearn.feature_extraction.text import CountVectorizer
 from helperfuns import readbyline
+
+
 
 class vectorizer:
     def __init__(self, fileStplist=None):
@@ -29,25 +33,60 @@ class vectorizer:
         seg_list = jieba.cut(item,cut_all=False)
         self.corpus.append(" ".join(seg_list))
         
-    def savesegmentedlist(self, raw_data):
-        features = raw_data["features"]
-        for item in features:
+    def savesegmentedlist(self, name="savedmodel"):
+        raw_data = importer.readsavedFile(name)
+        self.features = raw_data["features"]
+        self.labels1 = raw_data["labels1"]
+        self.labels2 = raw_data["labels2"]
+        jieba.load_userdict("userdict.txt")
+        for item in self.features:
             self.segmywords(item)
     
-    def tfidfvectorize(self):
-        vectorizer = CountVectorizer(stop_words=self.stpwrdslist, max_df=0.5)
-        self.tqm = vectorizer.fit_transform(self.corpus)
-        self.vocab = vectorizer.vocabulary_
-    
+    def tfidfvectorize(self, savename="vectorizersaved"):
+        # visit sckit-learn for more details
+        try:
+            savedV=importer.readsavedFile("vectorizersaved",flag=1)
+            vectorizer = CountVectorizer(stop_words=self.stpwrdslist, vocabulary=savedV["vocab"], max_df=0.5)
+            self.tqm = vectorizer.fit_transform(self.corpus)
+            self.vocab = savedV["vocab"] #keep the old vocab
             
+        except:
+            print("saved tfidf files not found, building new vocab and tqm")
+            vectorizer = CountVectorizer(stop_words=self.stpwrdslist, max_df=0.5)
+            self.tqm = vectorizer.fit_transform(self.corpus)
+            self.vocab = vectorizer.vocabulary_
         
+        finally:
+            # saves file, so whenever you have new sentences you can build on top
+            # of previous vocab
+            print("vectorizing complete")
+            self.saveFile(savename)
+        
+    def saveFile(self, savename="vectorizersaved"):
+        """Save vectorizerd result"""
+        fileSaved = {"tqm":self.tqm, "vocab":self.vocab}
+        pickle.dump(fileSaved, open(savename+".p", "wb"))
+        
+    def process(self):
+        self.savesegmentedlist()
+        self.tfidfvectorize()
+        
+    def topk(self,k=20,fileStplist = "./chineseStopwords.txt", withWeight=True):
+        jieba.analyse.set_stop_words(fileStplist)
+        content = ".".join(self.features)
+        tags = jieba.analyse.extract_tags(content, topK=k, withWeight=withWeight)
+#        for tag in tags:
+#            print("tag: %s\t\t weight: %f" % (tag[0],tag[1]))
+        return tags
     
-
 if __name__ == "__main__":
+    
     fileStplist = "./chineseStopwords.txt"
+    fileName = "1月1日-12月17日上报网公司周报工单详情.xlsx"
     
     # save segmented list
-    vectorizer = vectorizer(fileStplist)
-    vectorizer.savesegmentedlist(importer.readsavedFile())
-    vectorizer.tfidfvectorize()
+    a1 = importer(fileName)
+    a1.process()
+    b1 = vectorizer(fileStplist)
+    b1.process()
     

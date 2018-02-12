@@ -36,19 +36,23 @@ class importer:
         pickle.dump(fileSaved, open(savename, "wb"))
     
     def process(self):
-        self.readfile()
-        self.parsefile()
-        self.savefile()
+        if not os.path.isfile("savedmodel.p"):
+            self.readfile()
+            self.parsefile()
+            self.savefile()
+        else:
+            print("saved model found")
     
     @staticmethod
-    def readsavedFile(name="savedmodel"):
+    def readsavedFile(name="savedmodel", flag=0):
         savedname = name+'.p'
         try:
             raw_data = pickle.load(open(savedname, "rb"))
             return raw_data
         except:
             raw_data = None
-            print("You might forgot to process it/naming it wrong!")
+            if flag == 0:
+                print("You might forgot to process it/naming it wrong!")
         
     
     def __repr__(self):

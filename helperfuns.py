@@ -10,6 +10,8 @@ def readbyline(file):
     return [line.rstrip() for line in open(file)]
 
 
+
+
 if __name__=="__main__":
     file = "./chineseStopwords.txt"
     stpwrdlist = readbyline(file)
