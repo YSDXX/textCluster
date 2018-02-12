@@ -14,13 +14,12 @@ import re
 from sklearn.feature_extraction.text import CountVectorizer
 from helperfuns import readbyline
 
-
-
 class vectorizer:
     def __init__(self, fileStplist=None):
         self.corpus = []
         self.tqm = None
         self.vocab = None
+        self.labels = {}
         if fileStplist:
             self.stpwrdslist = readbyline(fileStplist)
         else:
@@ -36,8 +35,8 @@ class vectorizer:
     def savesegmentedlist(self, name="savedmodel"):
         raw_data = importer.readsavedFile(name)
         self.features = raw_data["features"]
-        self.labels1 = raw_data["labels1"]
-        self.labels2 = raw_data["labels2"]
+        self.labels["cl1"] = raw_data["labels1"]
+        self.labels["cl2"] = raw_data["labels2"]
         jieba.load_userdict("userdict.txt")
         for item in self.features:
             self.segmywords(item)
